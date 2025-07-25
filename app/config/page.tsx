@@ -161,7 +161,11 @@ export default function ConfigPage() {
       })
 
       if (response.ok) {
+<<<<<<< HEAD
+        await response.json()
+=======
         const data = await response.json()
+>>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
         setMessage({ type: 'success', text: 'Configuration saved successfully!' })
         fetchConfig() // Refresh the config
       } else {
@@ -169,7 +173,11 @@ export default function ConfigPage() {
         try {
           const data = await response.json()
           errorMessage = data.error || errorMessage
+<<<<<<< HEAD
+        } catch {
+=======
         } catch (e) {
+>>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
           // If we can't parse the error response, use a generic message
           if (response.status === 500) {
             errorMessage = 'Database connection issue. Switching to fallback mode...'
@@ -197,7 +205,11 @@ export default function ConfigPage() {
           text: 'Configuration saved locally! (Network issue - will sync when connection is restored)' 
         })
         fetchConfig()
+<<<<<<< HEAD
+      } catch {
+=======
       } catch (fallbackError) {
+>>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
         setMessage({ 
           type: 'error', 
           text: 'Failed to save configuration' 
@@ -230,7 +242,11 @@ export default function ConfigPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to delete configuration' })
       }
+<<<<<<< HEAD
+    } catch {
+=======
     } catch (error) {
+>>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
       setMessage({ type: 'error', text: 'Error deleting configuration' })
     }
   }

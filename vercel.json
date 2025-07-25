@@ -1,18 +1,9 @@
 {
   "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "buildCommand": "pnpm run build",
+  "devCommand": "pnpm run dev",
+  "installCommand": "pnpm install",
   "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "@next_public_clerk_publishable_key",
-    "CLERK_SECRET_KEY": "@clerk_secret_key",
-    "MONGODB_URI": "@mongodb_uri",
-    "AWS_ACCESS_KEY_ID": "@aws_access_key_id",
-    "AWS_SECRET_KEY": "@aws_secret_key",
-    "AWS_BUCKET_NAME": "@aws_bucket_name",
-    "AWS_REGION": "@aws_region"
-  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30

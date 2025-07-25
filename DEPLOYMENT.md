@@ -35,7 +35,11 @@ MONGODB_URI
 Optional (users can set their own):
 ```
 AWS_ACCESS_KEY_ID
+<<<<<<< HEAD
+AWS_SECRET_ACCESS_KEY
+=======
 AWS_SECRET_KEY
+>>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
 AWS_BUCKET_NAME
 AWS_REGION
 ```
