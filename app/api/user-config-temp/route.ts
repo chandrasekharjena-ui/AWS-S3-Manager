@@ -17,11 +17,7 @@ export async function POST(request: NextRequest) {
       message: 'Configuration would be saved (MongoDB currently unavailable)',
       received: body 
     })
-<<<<<<< HEAD
   } catch {
-=======
-  } catch (error) {
->>>>>>> 5773621 (Initial commit: S3Manager - Multi-user AWS S3 file manager with Clerk authentication)
     return NextResponse.json(
       { error: 'Invalid request' },
       { status: 400 }
