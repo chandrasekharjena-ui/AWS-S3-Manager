@@ -4,6 +4,7 @@ import { dark } from '@clerk/themes';
 import "./globals.css";
 
 import { ClerkProvider, SignedOut, SignIn, SignedIn } from "@clerk/nextjs";
+import { ToastProvider } from "@/components/ui/toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,7 +42,11 @@ export default function RootLayout({
               <SignIn routing="hash" />
             </div>
           </SignedOut>
-          <SignedIn>{children}</SignedIn>
+          <SignedIn>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </SignedIn>
         </body>
       </html>
     </ClerkProvider>

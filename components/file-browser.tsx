@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { TempConfigService } from '@/lib/temp-config'
+import Image from 'next/image'
 import { 
   Folder, 
   File, 
@@ -64,7 +65,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
   const [previewContent, setPreviewContent] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
 
-  const toast = useToast()
+  const { showToast } = useToast()
 
   // Helper function to get file type for preview
   const getFileType = (filename: string): 'image' | 'text' | 'pdf' | 'code' | 'other' => {
@@ -108,7 +109,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
   // Search functionality
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      toast.info('Please enter a search query')
+      showToast('Please enter a search query', 'info')
       return
     }
 
@@ -137,10 +138,10 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
       )
       
       setSearchResults(filtered)
-      toast.success(`Found ${filtered.length} matching files`)
+      showToast(`Found ${filtered.length} matching files`, 'success')
     } catch (error) {
       console.error('Search error:', error)
-      toast.error('Search failed. Please try again.')
+      showToast('Search failed. Please try again.', 'error')
     } finally {
       setIsSearching(false)
     }
@@ -151,7 +152,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
     setSearchMode(false)
     setSearchQuery('')
     setSearchResults([])
-    toast.info('Search cleared')
+    showToast('Search cleared', 'info')
   }
 
   // Handle file preview
@@ -209,7 +210,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
       }
     } catch (error) {
       console.error('Error loading preview:', error)
-      toast.error(`Failed to load preview: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      showToast(`Failed to load preview: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error')
       setPreviewFile(null)
     } finally {
       setPreviewLoading(false)
@@ -867,12 +868,14 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
               ) : previewUrl ? (
                 <div className="text-center">
                   {getFileType(previewFile.name) === 'image' ? (
-                    <img
+                    <Image
                       src={previewUrl}
                       alt={previewFile.name}
+                      width={500}
+                      height={400}
                       className="max-w-full max-h-96 mx-auto object-contain"
                       onError={() => {
-                        toast.error('Failed to load image preview')
+                        showToast('Failed to load image preview', 'error')
                         closePreview()
                       }}
                     />
