@@ -2,7 +2,7 @@
 
 // Deployment readiness checker for S3Manager
 const fs = require('fs');
-const path = require('path');
+
 
 console.log('🔍 Checking S3Manager deployment readiness...\n');
 
