@@ -1,0 +1,28 @@
+{
+    "CORSRules": [
+        {
+            "AllowedHeaders": [
+                "*"
+            ],
+            "AllowedMethods": [
+                "GET",
+                "PUT",
+                "POST",
+                "DELETE",
+                "HEAD"
+            ],
+            "AllowedOrigins": [
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "https://localhost:3000",
+                "https://localhost:3001",
+                "https://aws-s3-manager-to44.vercel.app"
+            ],
+            "ExposeHeaders": [
+                "ETag",
+                "x-amz-meta-custom-header"
+            ],
+            "MaxAgeSeconds": 3000
+        }
+    ]
+}

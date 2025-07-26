@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { auth } from '@clerk/nextjs/server';
 import { UserConfigService } from '@/lib/user-config';
@@ -35,53 +35,99 @@ export async function POST(request: NextRequest) {
             },
         });
         
-        const { fileName, fileType, prefix } = await request.json();
+        const { fileName, fileType, prefix, key, operation } = await request.json();
         
-        console.log('Request data:', { fileName, fileType, prefix })
+        console.log('Request data:', { fileName, fileType, prefix, key, operation })
         
-        if (!fileName) {
-            console.error('No fileName provided')
-            return NextResponse.json(
-                { error: 'File name is required' },
-                { 
-                    status: 400,
-                    headers: {
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type',
+        // For getObject operations, we need either fileName or key
+        // For putObject operations, we need fileName
+        if (operation === 'getObject') {
+            const objectKey = key || (prefix ? `${prefix}${fileName}` : fileName);
+            if (!objectKey) {
+                console.error('No key or fileName provided for getObject operation')
+                return NextResponse.json(
+                    { error: 'Key or file name is required for download' },
+                    { 
+                        status: 400,
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type',
+                        }
                     }
-                }
-            );
-        }
-
-        // Create the S3 key (path)
-        const key = prefix ? `${prefix}${fileName}` : fileName;
-        console.log('S3 key:', key)
-
-        const command = new PutObjectCommand({
-            Bucket: userConfig.awsBucketName,
-            Key: key,
-            ContentType: fileType,
-        });
-
-        // Generate presigned URL that expires in 5 minutes
-        const presignedUrl = await getSignedUrl(client, command, {
-            expiresIn: 300, // 5 minutes
-        });
-
-        console.log('Presigned URL generated successfully')
-
-        return NextResponse.json({
-            presignedUrl,
-            key,
-            fileName,
-        }, {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                );
             }
-        });
+
+            console.log('Get object key:', objectKey)
+
+            const command = new GetObjectCommand({
+                Bucket: userConfig.awsBucketName,
+                Key: objectKey,
+            });
+
+            // Generate presigned URL that expires in 1 hour for viewing
+            const presignedUrl = await getSignedUrl(client, command, {
+                expiresIn: 3600, // 1 hour
+            });
+
+            console.log('Get presigned URL generated successfully')
+
+            return NextResponse.json({
+                url: presignedUrl,
+                key: objectKey,
+            }, {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                }
+            });
+        } else {
+            // Default to putObject operation for upload
+            if (!fileName) {
+                console.error('No fileName provided')
+                return NextResponse.json(
+                    { error: 'File name is required' },
+                    { 
+                        status: 400,
+                        headers: {
+                            'Access-Control-Allow-Origin': '*',
+                            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                            'Access-Control-Allow-Headers': 'Content-Type',
+                        }
+                    }
+                );
+            }
+
+            // Create the S3 key (path)
+            const uploadKey = prefix ? `${prefix}${fileName}` : fileName;
+            console.log('Upload S3 key:', uploadKey)
+
+            const command = new PutObjectCommand({
+                Bucket: userConfig.awsBucketName,
+                Key: uploadKey,
+                ContentType: fileType,
+            });
+
+            // Generate presigned URL that expires in 5 minutes
+            const presignedUrl = await getSignedUrl(client, command, {
+                expiresIn: 300, // 5 minutes
+            });
+
+            console.log('Upload presigned URL generated successfully')
+
+            return NextResponse.json({
+                presignedUrl,
+                key: uploadKey,
+                fileName,
+            }, {
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                }
+            });
+        }
 
     } catch (error) {
         console.error('Error generating presigned URL:', error);

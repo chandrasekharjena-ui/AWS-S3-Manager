@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { TempConfigService } from '@/lib/temp-config'
-import Image from 'next/image'
 import { 
   Folder, 
   File, 
@@ -868,11 +867,9 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
               ) : previewUrl ? (
                 <div className="text-center">
                   {getFileType(previewFile.name) === 'image' ? (
-                    <Image
+                    <img
                       src={previewUrl}
                       alt={previewFile.name}
-                      width={500}
-                      height={400}
                       className="max-w-full max-h-96 mx-auto object-contain"
                       onError={() => {
                         showToast('Failed to load image preview', 'error')
