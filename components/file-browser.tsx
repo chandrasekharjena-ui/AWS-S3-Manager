@@ -183,29 +183,23 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
         const data = await response.json()
         setPreviewUrl(data.url)
       } else if (fileType === 'text' || fileType === 'code') {
-        // Fetch text content
-        const response = await fetch('/api/presigned-url', {
+        // Fetch text content via our API proxy to handle CORS
+        const response = await fetch('/api/objects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             key: item.key,
-            operation: 'getObject'
+            action: 'getContent'
           })
         })
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(`API Error: ${errorData.error || 'Failed to get presigned URL'}`)
+          throw new Error(`API Error: ${errorData.error || 'Failed to get file content'}`)
         }
         
         const data = await response.json()
-        // Fetch the actual content
-        const contentResponse = await fetch(data.url)
-        if (!contentResponse.ok) {
-          throw new Error('Failed to fetch file content from S3')
-        }
-        const textContent = await contentResponse.text()
-        setPreviewContent(textContent)
+        setPreviewContent(data.content)
       }
     } catch (error) {
       console.error('Error loading preview:', error)

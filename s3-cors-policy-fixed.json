@@ -5,15 +5,20 @@
         ],
         "AllowedMethods": [
             "GET",
-            "PUT", 
+            "PUT",
             "POST",
             "DELETE",
             "HEAD"
         ],
         "AllowedOrigins": [
             "http://localhost:3000",
+            "http://localhost:3001",
             "https://localhost:3000",
-            "https://aws-s3-manager-to44.vercel.app"
+            "https://localhost:3001",
+            "https://your-domain.com",
+            "https://*.vercel.app",
+            "https://*.netlify.app",
+            "*"
         ],
         "ExposeHeaders": [
             "ETag",
