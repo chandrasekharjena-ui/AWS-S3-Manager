@@ -21,7 +21,7 @@ import {
   Search,
   Eye,
   FileText,
-  Image,
+  Image as ImageIcon,
   FileType
 } from 'lucide-react'
 
@@ -90,7 +90,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
     const fileType = getFileType(filename)
     switch (fileType) {
       case 'image':
-        return <Image className="w-4 h-4" />
+        return <ImageIcon className="w-4 h-4" />
       case 'text':
       case 'code':
         return <FileText className="w-4 h-4" />
@@ -103,6 +103,124 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
   const isPreviewable = (filename: string): boolean => {
     const fileType = getFileType(filename)
     return ['image', 'text', 'code', 'pdf'].includes(fileType)
+  }
+
+  // Search functionality
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast.info('Please enter a search query')
+      return
+    }
+
+    setIsSearching(true)
+    setSearchMode(true)
+    
+    try {
+      const response = await fetch('/api/objects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prefix: '', // Search from root
+          search: searchQuery
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+
+      const data = await response.json()
+      
+      // Filter results based on search query (case-insensitive)
+      const filtered = data.items.filter((item: S3Item) => 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      
+      setSearchResults(filtered)
+      toast.success(`Found ${filtered.length} matching files`)
+    } catch (error) {
+      console.error('Search error:', error)
+      toast.error('Search failed. Please try again.')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchMode(false)
+    setSearchQuery('')
+    setSearchResults([])
+    toast.info('Search cleared')
+  }
+
+  // Handle file preview
+  const handlePreview = async (item: S3Item) => {
+    setPreviewFile(item)
+    setPreviewLoading(true)
+    setPreviewUrl(null)
+    setPreviewContent(null)
+
+    try {
+      const fileType = getFileType(item.name)
+      
+      if (fileType === 'image' || fileType === 'pdf') {
+        // Get signed URL for direct viewing
+        const response = await fetch('/api/presigned-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: item.key,
+            operation: 'getObject'
+          })
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(`API Error: ${errorData.error || 'Failed to get presigned URL'}`)
+        }
+        
+        const data = await response.json()
+        setPreviewUrl(data.url)
+      } else if (fileType === 'text' || fileType === 'code') {
+        // Fetch text content
+        const response = await fetch('/api/presigned-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: item.key,
+            operation: 'getObject'
+          })
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(`API Error: ${errorData.error || 'Failed to get presigned URL'}`)
+        }
+        
+        const data = await response.json()
+        // Fetch the actual content
+        const contentResponse = await fetch(data.url)
+        if (!contentResponse.ok) {
+          throw new Error('Failed to fetch file content from S3')
+        }
+        const textContent = await contentResponse.text()
+        setPreviewContent(textContent)
+      }
+    } catch (error) {
+      console.error('Error loading preview:', error)
+      toast.error(`Failed to load preview: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setPreviewFile(null)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  // Close preview modal
+  const closePreview = () => {
+    setPreviewFile(null)
+    setPreviewUrl(null)
+    setPreviewContent(null)
   }
 
   // Fetch bucket name from config if not provided as prop
@@ -420,6 +538,47 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
           </div>
         )}
         
+        {/* Search */}
+        <div className="mb-4 flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-1">
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <Button
+              onClick={handleSearch}
+              disabled={isSearching || !searchQuery.trim()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSearching ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+            </Button>
+            {searchMode && (
+              <Button
+                onClick={clearSearch}
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {/* Search Results Header */}
+        {searchMode && (
+          <div className="mb-4 text-sm text-gray-400">
+            🔍 Search results for &quot;{searchQuery}&quot; ({searchResults.length} items found)
+          </div>
+        )}
+        
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm">
           <Button
@@ -604,7 +763,9 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
           </div>
         ) : (
           <div className="divide-y divide-gray-700">
-            {items.map((item, index) => (
+            {(() => {
+              const displayItems = searchMode ? searchResults : items
+              return displayItems.map((item, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 hover:bg-gray-800 transition-colors"
@@ -613,7 +774,7 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
                   {item.type === 'folder' ? (
                     <Folder className="w-5 h-5 text-blue-400" />
                   ) : (
-                    <File className="w-5 h-5 text-gray-400" />
+                    getFileIcon(item.name)
                   )}
                   
                   {item.type === 'folder' ? (
@@ -643,6 +804,18 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
                   )}
 
                   <div className="flex items-center gap-2">
+                    {item.type === 'file' && isPreviewable(item.name) && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handlePreview(item)}
+                        className="p-1 text-gray-400 hover:text-blue-400 hover:bg-gray-700"
+                        title={`Preview ${item.name}`}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
                     {item.type === 'file' && (
                       <Button variant="ghost" size="sm" className="p-1 text-gray-400 hover:text-white hover:bg-gray-700">
                         <Download className="w-4 h-4" />
@@ -661,10 +834,72 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+            })()}
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {previewFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden border border-gray-700">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h3 className="text-lg font-semibold text-white truncate">Preview: {previewFile.name}</h3>
+              <Button
+                onClick={closePreview}
+                variant="ghost"
+                size="sm"
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-3 text-gray-300">Loading preview...</span>
+                </div>
+              ) : previewUrl ? (
+                <div className="text-center">
+                  {getFileType(previewFile.name) === 'image' ? (
+                    <img
+                      src={previewUrl}
+                      alt={previewFile.name}
+                      className="max-w-full max-h-96 mx-auto object-contain"
+                      onError={() => {
+                        toast.error('Failed to load image preview')
+                        closePreview()
+                      }}
+                    />
+                  ) : getFileType(previewFile.name) === 'pdf' ? (
+                    <iframe
+                      src={previewUrl}
+                      className="w-full h-96 border border-gray-600 rounded"
+                      title={previewFile.name}
+                    />
+                  ) : null}
+                </div>
+              ) : previewContent ? (
+                <div className="text-left">
+                  <pre className="bg-gray-800 p-4 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap text-gray-200 border border-gray-600">
+                    {previewContent}
+                  </pre>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileType className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-400">Preview not available for this file type</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
