@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/toast'
 import { TempConfigService } from '@/lib/temp-config'
 import { 
   Folder, 
@@ -16,7 +17,12 @@ import {
   Check,
   Trash2,
   FolderPlus,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Eye,
+  FileText,
+  Image,
+  FileType
 } from 'lucide-react'
 
 interface S3Item {
@@ -45,6 +51,59 @@ export default function FileBrowser({ bucketName: propBucketName }: FileBrowserP
   const [creatingFolder, setCreatingFolder] = useState(false)
   const [fallbackMode, setFallbackMode] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
+  
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<S3Item[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchMode, setSearchMode] = useState(false)
+  
+  // Preview functionality
+  const [previewFile, setPreviewFile] = useState<S3Item | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewContent, setPreviewContent] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  const toast = useToast()
+
+  // Helper function to get file type for preview
+  const getFileType = (filename: string): 'image' | 'text' | 'pdf' | 'code' | 'other' => {
+    const ext = filename.toLowerCase().split('.').pop() || ''
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(ext)) {
+      return 'image'
+    }
+    if (['txt', 'md', 'json', 'xml', 'csv', 'log'].includes(ext)) {
+      return 'text'
+    }
+    if (['js', 'ts', 'tsx', 'jsx', 'py', 'java', 'cpp', 'c', 'html', 'css', 'sql', 'php', 'rb', 'go', 'rs', 'sh', 'yml', 'yaml'].includes(ext)) {
+      return 'code'
+    }
+    if (ext === 'pdf') {
+      return 'pdf'
+    }
+    return 'other'
+  }
+
+  // Helper function to get file icon
+  const getFileIcon = (filename: string) => {
+    const fileType = getFileType(filename)
+    switch (fileType) {
+      case 'image':
+        return <Image className="w-4 h-4" />
+      case 'text':
+      case 'code':
+        return <FileText className="w-4 h-4" />
+      default:
+        return <File className="w-4 h-4" />
+    }
+  }
+
+  // Check if file is previewable
+  const isPreviewable = (filename: string): boolean => {
+    const fileType = getFileType(filename)
+    return ['image', 'text', 'code', 'pdf'].includes(fileType)
+  }
 
   // Fetch bucket name from config if not provided as prop
   useEffect(() => {

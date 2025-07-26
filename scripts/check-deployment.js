@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Deployment readiness checker for S3Manager
-const fs = require('fs');
+import fs from 'fs';
 
 
 console.log('🔍 Checking S3Manager deployment readiness...\n');
@@ -57,6 +57,49 @@ const checks = [
       return packageJson.scripts && packageJson.scripts.start;
     },
     required: true
+  },
+  {
+    name: 'Toast component exists',
+    check: () => fs.existsSync('./components/ui/toast.tsx'),
+    required: true
+  },
+  {
+    name: 'File browser component exists',
+    check: () => fs.existsSync('./components/file-browser.tsx'),
+    required: true
+  },
+  {
+    name: 'MongoDB lib exists',
+    check: () => fs.existsSync('./lib/mongodb.ts'),
+    required: true
+  },
+  {
+    name: 'User config lib exists',
+    check: () => fs.existsSync('./lib/user-config.ts'),
+    required: true
+  },
+  {
+    name: 'Essential API routes exist',
+    check: () => {
+      const essentialRoutes = [
+        './app/api/config/route.ts',
+        './app/api/objects/route.ts',
+        './app/api/presigned-url/route.ts',
+        './app/api/user-config/route.ts'
+      ];
+      return essentialRoutes.every(route => fs.existsSync(route));
+    },
+    required: true
+  },
+  {
+    name: 'Main layout file exists',
+    check: () => fs.existsSync('./app/layout.tsx'),
+    required: true
+  },
+  {
+    name: 'Main page file exists',
+    check: () => fs.existsSync('./app/page.tsx'),
+    required: true
   }
 ];
 
@@ -91,10 +134,21 @@ console.log('\n📋 Summary:');
 if (requiredPassed) {
   console.log('✅ All required checks passed! Your app is ready for Vercel deployment.');
   console.log('\n🚀 Next steps:');
-  console.log('1. Set up environment variables in Vercel');
+  console.log('1. Set up environment variables in Vercel:');
+  console.log('   - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY');
+  console.log('   - CLERK_SECRET_KEY');
+  console.log('   - MONGODB_URI');
+  console.log('   - Optional: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_BUCKET_NAME, AWS_REGION');
   console.log('2. Run: vercel --prod');
-  console.log('3. Configure your domains in Clerk');
+  console.log('3. Configure your domains in Clerk dashboard');
   console.log('4. Test your deployed application');
+  console.log('\n💡 Features included:');
+  console.log('   ✓ File preview (images, text, PDF)');
+  console.log('   ✓ Global search across S3 bucket');
+  console.log('   ✓ Toast notifications for user feedback');
+  console.log('   ✓ Drag & drop file upload');
+  console.log('   ✓ Folder creation and navigation');
+  console.log('   ✓ File deletion with confirmation');
 } else {
   console.log('❌ Some required checks failed. Please fix the issues above before deploying.');
 }
