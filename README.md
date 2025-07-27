@@ -93,4 +93,4 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # AWS-S3-Manager
-<img width="1080" height="832" alt="20250728_015826" src="https://github.com/chandrasekharjena-ui/AWS-S3-Manager/Screenshot_20250728-014946.png?raw=true" />
+<img width="1080" height="897" alt="Screenshot_20250728-014946" src="https://github.com/user-attachments/assets/65e4914c-120a-44da-bcc3-63702efff323" />
